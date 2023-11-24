@@ -1,7 +1,27 @@
 {
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^4.18.2",
-    "mongodb": "^6.2.0",
-    "mongoose": "^8.0.0"
-  }
+    "mongoose": "^6.3.4",
+    "nodemon": "^3.0.1"
+  },
+  "name": "projeto2web2",
+  "version": "1.0.0",
+  "main": "index.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon ./src/index.js localhost 5000"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheNatas/Projeto2Web2.git"
+  },
+  "author": "Natanael Alves Gabriel",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/TheNatas/Projeto2Web2/issues"
+  },
+  "homepage": "https://github.com/TheNatas/Projeto2Web2#readme",
+  "description": ""
 }
