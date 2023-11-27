@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const createUserToken = require("../helpers/createUserToken");
 
 module.exports = class UserController {
   static async test(req, res) {
@@ -95,7 +96,7 @@ module.exports = class UserController {
     }
 
     // check if password match with db password
-    const checkPassword = await bcrypt.compare(password, user.password);
+    const checkPassword = password === user.password;
 
     if (!checkPassword) {
       res.status(422).json({
@@ -107,23 +108,17 @@ module.exports = class UserController {
     await createUserToken(user, req, res);
   }
 
-  static async checkUser(req, res) {
-    let currentUser;
+  static async getUsers(req, res) {
+    const users = await User.find().select("-password");
 
-    console.log(req.headers.authorization);
-
-    if (req.headers.authorization) {
-      const token = getToken(req);
-      const decoded = jwt.verify(token, "nossosecret");
-
-      currentUser = await User.findById(decoded.id);
-
-      currentUser.password = undefined;
-    } else {
-      currentUser = null;
+    if (!users) {
+      res.status(422).json({
+        message: "Não há usuários cadastrados",
+      });
+      return;
     }
 
-    res.status(200).send(currentUser);
+    res.status(200).json({ users });
   }
 
   static async getUserById(req, res) {
@@ -145,18 +140,9 @@ module.exports = class UserController {
     const id = req.params.id;
 
     //check if user exists
-    const token = getToken(req);
-    const user = await getUserByToken(token);
+    const user = await User.findById(id);
 
-    const { name, email, phone, password, confirmPassword } = req.body;
-
-    let image = ''
-
-    if(req.file){
-     user.image = req.file.filename
-    }
-
-
+    const { name, email, username, password, confirmPassword } = req.body;
 
     //validations
     if (!name) {
@@ -183,12 +169,12 @@ module.exports = class UserController {
 
     user.email = email;
 
-    if (!phone) {
-      res.status(422).json({ message: 'O telefone é obrigatório!' })
+    if (!username) {
+      res.status(422).json({ message: 'O nome de usuário é obrigatório!' })
       return
     }
 
-    user.phone = phone
+    user.username = username
 
     if(password != confirmPassword){
       res.status(422).json({ 
@@ -197,10 +183,7 @@ module.exports = class UserController {
       return;
     } else if(password === confirmPassword && password != null){
       //creating password
-      const salt = await bcrypt.genSalt(12);
-      const passwordHash = await bcrypt.hash(password, salt);
-
-      user.password = passwordHash
+      user.password = password
     }
 
     try{
@@ -218,4 +201,14 @@ module.exports = class UserController {
       return
     }
   }
+
+  static async deleteUser(req, res) {
+    try {
+      const { id } = req.params;
+      await User.findByIdAndDelete(id);
+      res.status(200).json({ message: "User deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  };
 };

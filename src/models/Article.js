@@ -16,6 +16,7 @@ const Article = mongoose.model(
       permalink: {
         type: String,
         required: true,
+        unique: true,
       },
       keywords: {
         type: String,

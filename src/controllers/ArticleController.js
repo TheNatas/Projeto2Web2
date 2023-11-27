@@ -31,7 +31,7 @@ module.exports = class ArticleController {
     console.log('passed validations');
 
     // check if user exists
-    const authorExists = await User.findOne({ email: email });
+    const authorExists = await User.findOne({ email: authorEmail });
 
     if (!authorExists) {
       res.status(422).json({
@@ -48,6 +48,8 @@ module.exports = class ArticleController {
       body,
       permalink,
       keywords,
+      likes: 0,
+      published: true,
       suggestion,
       featured,
       authorEmail,
@@ -60,152 +62,239 @@ module.exports = class ArticleController {
       console.log('passed save');
       res.status(200).json(newArticle);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ message: error });
     }
   }
 
-  static async login(req, res) {
-    const { email, password } = req.body;
+  static async getArticles(req, res) {
+    const articles = await Article.find().sort({ publishedAt: -1 });
 
-    if (!email) {
-      res.status(422).json({ message: "O email é obrigatório" });
-      return;
-    }
-    if (!password) {
-      res.status(422).json({ message: "A senha é obrigatória" });
-      return;
-    }
-
-    // check if user exists
-    const user = await Article.findOne({ email: email });
-
-    if (!user) {
+    if (!articles) {
       res.status(422).json({
-        message: "Não há usuário cadastrado com esse email!",
+        message: "Nenhum artigo encontrado",
       });
       return;
     }
 
-    // check if password match with db password
-    const checkPassword = await bcrypt.compare(password, user.password);
-
-    if (!checkPassword) {
-      res.status(422).json({
-        message: "Senha inválida!",
-      });
-      return;
-    }
-
-    await createArticleToken(user, req, res);
+    res.status(200).json({ articles });
   }
 
-  static async checkArticle(req, res) {
-    let currentArticle;
+  static async getArticleByPermalink(req, res) {
+    const permalink = req.params.permalink;
 
-    console.log(req.headers.authorization);
+    const article = await Article.findOne({ permalink: permalink });
 
-    if (req.headers.authorization) {
-      const token = getToken(req);
-      const decoded = jwt.verify(token, "nossosecret");
-
-      currentArticle = await Article.findById(decoded.id);
-
-      currentArticle.password = undefined;
-    } else {
-      currentArticle = null;
-    }
-
-    res.status(200).send(currentArticle);
-  }
-
-  static async getArticleById(req, res) {
-    const id = req.params.id;
-
-    const user = await Article.findById(id).select("-password");
-
-    if (!user) {
+    if (!article) {
       res.status(422).json({
-        message: "Usuário não encontrado",
+        message: "Artigo não encontrado",
       });
       return;
     }
 
-    res.status(200).json({ user });
+    res.status(200).json({ article });
   }
 
   static async editArticle(req, res) {
     const id = req.params.id;
 
-    //check if user exists
-    const token = getToken(req);
-    const user = await getArticleByToken(token);
+    //check if article exists
+    const article = Article.findOne({ _id: id });
+    const newArticle = {};
 
-    const { name, email, phone, password, confirmPassword } = req.body;
-
-    let image = ''
-
-    if(req.file){
-     user.image = req.file.filename
-    }
-
-
+    const { title, body, permalink, keywords, suggestion, featured, authorEmail } = req.body;
 
     //validations
-    if (!name) {
-      res.status(422).json({ message: "O nome é obrigatório" });
+    if (!title) {
+      res.status(422).json({ message: "O título é obrigatório" });
       return;
     }
-
-    user.name = name;
-
-    if (!email) {
-      res.status(422).json({ message: "O email é obrigatório" });
-      return;
+    if (article.title !== title) {
+      newArticle.title = title;
     }
 
-    //check if email has already taken
-    const userExists = await Article.findOne({ email: email });
+    if (!body) {
+      res.status(422).json({ message: "O corpo é obrigatório" });
+      return;
+    }
+    if (article.body !== body) {
+      newArticle.body = body;
+    }
 
-    if (user.email !== email && userExists) {
+    if (!permalink) {
+      res.status(422).json({ message: "O link permanente é obrigatório" });
+      return;
+    }
+    if (article.permalink !== permalink) {
+      newArticle.permalink = permalink;
+    }
+
+    if (!authorEmail) {
+      res.status(422).json({ message: "O email do autor é obrigatório" });
+      return;
+    };
+    if (article.authorEmail !== authorEmail) {
+      newArticle.authorEmail = authorEmail;
+    }
+
+    console.log('passed validations');
+
+    // check if article exists
+    const authorExists = await User.findOne({ email: authorEmail });
+
+    if (!authorExists) {
       res.status(422).json({
-        message: "Por favor, utilize outro email",
+        message: "Autor não existe!",
       });
       return;
     }
 
-    user.email = email;
+    console.log('passed author exists check');
 
-    if (!phone) {
-      res.status(422).json({ message: 'O telefone é obrigatório!' })
-      return
+    if (article.keywords !== keywords) {
+      newArticle.keywords = keywords;
     }
-
-    user.phone = phone
-
-    if(password != confirmPassword){
-      res.status(422).json({ 
-        message : 'As senhas não conferem!'
-      });
-      return;
-    } else if(password === confirmPassword && password != null){
-      //creating password
-      const salt = await bcrypt.genSalt(12);
-      const passwordHash = await bcrypt.hash(password, salt);
-
-      user.password = passwordHash
+    if (article.suggestion !== suggestion) {
+      newArticle.suggestion = suggestion;
+    }
+    if (article.featured !== featured) {
+      newArticle.featured = featured;
     }
 
     try{
-      //returns user update data
+      //returns article update data
       await Article.findOneAndUpdate(
-        { _id: user._id },
-        { $set: user },
+        { _id: article._id },
+        { ...newArticle },
         { new: true },
       )
       res.status(200).json({
-        message: 'Usuário atualizado com sucesso!',
+        message: 'Artigo atualizado com sucesso!',
       })
     }catch (err){
+      console.error(err.message)
+      res.status(500).json ({message: err})
+      return
+    }
+  } // not saving
+
+  static async deleteArticle(req, res) {
+    const id = req.params.id;
+
+    //check if article exists
+    const article = Article.findOne({ _id: id });
+
+    if (!article) {
+      res.status(422).json({
+        message: "Artigo não encontrado",
+      });
+      return;
+    }
+
+    try{
+      //returns article update data
+      await Article.deleteOne(
+        { _id: article._id },
+      )
+      res.status(200).json({
+        message: 'Artigo deletado com sucesso!',
+      })
+    } catch (err){
+      console.error(err.message)
+      res.status(500).json ({message: err})
+      return
+    }
+  } // not saving
+
+  static async getMostLikedArticles(req, res) {
+    const articles = await Article.find().sort({ likes: -1 }).limit(10);
+
+    if (!articles) {
+      res.status(422).json({
+        message: "Nenhum artigo encontrado",
+      });
+      return;
+    }
+
+    res.status(200).json({ articles });
+  }
+
+  static async getFeaturedArticles(req, res) {
+    const articles = await Article.find({ featured: true });
+
+    if (!articles) {
+      res.status(422).json({
+        message: "Nenhum artigo encontrado",
+      });
+      return;
+    }
+
+    res.status(200).json({ articles });
+  }
+
+  static async getSuggestedArticles(req, res) {
+    const articles = await Article.find({ suggestion: true });
+
+    if (!articles) {
+      res.status(422).json({
+        message: "Nenhum artigo encontrado",
+      });
+      return;
+    }
+
+    res.status(200).json({ articles });
+  }
+
+  static async getArticlesByAuthor(req, res) {
+    const authorEmail = req.params.authorEmail;
+
+    const articles = await Article.find({ authorEmail: authorEmail });
+
+    if (!articles) {
+      res.status(422).json({
+        message: "Nenhum artigo encontrado",
+      });
+      return;
+    }
+
+    res.status(200).json({ articles });
+  }
+
+  static async getArticlesByKeyword(req, res) {
+    const keyword = req.params.keyword;
+
+    const articles = await Article.find({keywords: { $regex: '.*' + keyword + '.*' } });
+
+    if (!articles) {
+      res.status(422).json({
+        message: "Nenhum artigo encontrado",
+      });
+      return;
+    }
+
+    res.status(200).json({ articles });
+  }
+
+  static async likeArticle(req, res) {
+    const id = req.params.id;
+
+    //check if article exists
+    const article = Article.findOne({ _id: id });
+
+    if (!article) {
+      res.status(422).json({
+        message: "Artigo não encontrado",
+      });
+      return;
+    }
+
+    try{
+      //returns article update data
+      res.status(200).json({
+        article
+      })
+    } catch (err){
+      console.error(err.message)
       res.status(500).json ({message: err})
       return
     }
