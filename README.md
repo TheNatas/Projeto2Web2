@@ -1,7 +1,7 @@
 # Projeto2Web2
 
 ### Requirements
-Node.js (recommended >= v12)
+- Node.js (recommended >= v12)
 
 ### Config
 - Add your credentials on a `.env` file containing `MONGODB_USER` and `MONGODB_KEY`
