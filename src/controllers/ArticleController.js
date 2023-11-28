@@ -99,8 +99,7 @@ module.exports = class ArticleController {
     const id = req.params.id;
 
     //check if article exists
-    const article = Article.findOne({ _id: id });
-    const newArticle = {};
+    const article = await Article.findOne({ _id: id });
 
     const { title, body, permalink, keywords, suggestion, featured, authorEmail } = req.body;
 
@@ -110,7 +109,7 @@ module.exports = class ArticleController {
       return;
     }
     if (article.title !== title) {
-      newArticle.title = title;
+      article.title = title;
     }
 
     if (!body) {
@@ -118,7 +117,7 @@ module.exports = class ArticleController {
       return;
     }
     if (article.body !== body) {
-      newArticle.body = body;
+      article.body = body;
     }
 
     if (!permalink) {
@@ -126,7 +125,7 @@ module.exports = class ArticleController {
       return;
     }
     if (article.permalink !== permalink) {
-      newArticle.permalink = permalink;
+      article.permalink = permalink;
     }
 
     if (!authorEmail) {
@@ -134,7 +133,7 @@ module.exports = class ArticleController {
       return;
     };
     if (article.authorEmail !== authorEmail) {
-      newArticle.authorEmail = authorEmail;
+      article.authorEmail = authorEmail;
     }
 
     console.log('passed validations');
@@ -152,37 +151,37 @@ module.exports = class ArticleController {
     console.log('passed author exists check');
 
     if (article.keywords !== keywords) {
-      newArticle.keywords = keywords;
+      article.keywords = keywords;
     }
     if (article.suggestion !== suggestion) {
-      newArticle.suggestion = suggestion;
+      article.suggestion = suggestion;
     }
     if (article.featured !== featured) {
-      newArticle.featured = featured;
+      article.featured = featured;
     }
 
     try{
       //returns article update data
       await Article.findOneAndUpdate(
         { _id: article._id },
-        { ...newArticle },
+        { $set: article },
         { new: true },
       )
       res.status(200).json({
-        message: 'Artigo atualizado com sucesso!',
+        article
       })
     }catch (err){
       console.error(err.message)
       res.status(500).json ({message: err})
       return
     }
-  } // not saving
+  }
 
   static async deleteArticle(req, res) {
     const id = req.params.id;
 
     //check if article exists
-    const article = Article.findOne({ _id: id });
+    const article = await Article.findOne({ _id: id });
 
     if (!article) {
       res.status(422).json({
@@ -279,7 +278,7 @@ module.exports = class ArticleController {
     const id = req.params.id;
 
     //check if article exists
-    const article = Article.findOne({ _id: id });
+    const article = await Article.findOne({ _id: id });
 
     if (!article) {
       res.status(422).json({
