@@ -2,12 +2,8 @@ const User = require("../models/User");
 const createUserToken = require("../helpers/createUserToken");
 
 module.exports = class UserController {
-  static async test(req, res) {
-    res.status(200).json({ message: "Hello World!" });
-  }
   static async register(req, res) {
     const { name, email, username, password, confirmPassword, level } = req.body;
-    console.log('entered register method', req.body)
 
     //validations
     if (!name) {

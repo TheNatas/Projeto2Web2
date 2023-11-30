@@ -2,9 +2,6 @@ const Article = require("../models/Article");
 const User = require("../models/User");
 
 module.exports = class ArticleController {
-  static async test(req, res) {
-    res.status(200).json({ message: "Hello World!" });
-  }
   static async create(req, res) {
     const { title, body, permalink, keywords, suggestion, featured, authorEmail } = req.body;
 
