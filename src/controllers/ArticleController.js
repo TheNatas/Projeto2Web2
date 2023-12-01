@@ -3,7 +3,15 @@ const User = require("../models/User");
 
 module.exports = class ArticleController {
   static async create(req, res) {
-    const { title, body, permalink, keywords, suggestion, featured, authorEmail } = req.body;
+    const {
+      title,
+      body,
+      permalink,
+      keywords,
+      suggestion,
+      featured,
+      authorEmail,
+    } = req.body;
 
     //validations
     if (!title) {
@@ -23,9 +31,9 @@ module.exports = class ArticleController {
     if (!authorEmail) {
       res.status(422).json({ message: "O email do autor é obrigatório" });
       return;
-    };
+    }
 
-    console.log('passed validations');
+    console.log("passed validations");
 
     // check if user exists
     const authorExists = await User.findOne({ email: authorEmail });
@@ -37,7 +45,7 @@ module.exports = class ArticleController {
       return;
     }
 
-    console.log('passed user exists check');
+    console.log("passed user exists check");
 
     // create a user
     const article = new Article({
@@ -54,9 +62,9 @@ module.exports = class ArticleController {
     });
 
     try {
-      console.log('starting save')
+      console.log("starting save");
       const newArticle = await article.save();
-      console.log('passed save');
+      console.log("passed save");
       res.status(200).json(newArticle);
     } catch (error) {
       console.error(error);
@@ -98,7 +106,15 @@ module.exports = class ArticleController {
     //check if article exists
     const article = await Article.findOne({ _id: id });
 
-    const { title, body, permalink, keywords, suggestion, featured, authorEmail } = req.body;
+    const {
+      title,
+      body,
+      permalink,
+      keywords,
+      suggestion,
+      featured,
+      authorEmail,
+    } = req.body;
 
     //validations
     if (!title) {
@@ -128,12 +144,12 @@ module.exports = class ArticleController {
     if (!authorEmail) {
       res.status(422).json({ message: "O email do autor é obrigatório" });
       return;
-    };
+    }
     if (article.authorEmail !== authorEmail) {
       article.authorEmail = authorEmail;
     }
 
-    console.log('passed validations');
+    console.log("passed validations");
 
     // check if article exists
     const authorExists = await User.findOne({ email: authorEmail });
@@ -145,7 +161,7 @@ module.exports = class ArticleController {
       return;
     }
 
-    console.log('passed author exists check');
+    console.log("passed author exists check");
 
     if (article.keywords !== keywords) {
       article.keywords = keywords;
@@ -157,20 +173,20 @@ module.exports = class ArticleController {
       article.featured = featured;
     }
 
-    try{
+    try {
       //returns article update data
       await Article.findOneAndUpdate(
         { _id: article._id },
         { $set: article },
-        { new: true },
-      )
+        { new: true }
+      );
       res.status(200).json({
-        article
-      })
-    }catch (err){
-      console.error(err.message)
-      res.status(500).json ({message: err})
-      return
+        article,
+      });
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).json({ message: err });
+      return;
     }
   }
 
@@ -187,20 +203,18 @@ module.exports = class ArticleController {
       return;
     }
 
-    try{
+    try {
       //returns article update data
-      await Article.deleteOne(
-        { _id: article._id },
-      )
+      await Article.deleteOne({ _id: article._id });
       res.status(200).json({
-        message: 'Artigo deletado com sucesso!',
-      })
-    } catch (err){
-      console.error(err.message)
-      res.status(500).json ({message: err})
-      return
+        message: "Artigo deletado com sucesso!",
+      });
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).json({ message: err });
+      return;
     }
-  } // not saving
+  }
 
   static async getMostLikedArticles(req, res) {
     const articles = await Article.find().sort({ likes: -1 }).limit(10);
@@ -259,7 +273,9 @@ module.exports = class ArticleController {
   static async getArticlesByKeyword(req, res) {
     const keyword = req.params.keyword;
 
-    const articles = await Article.find({keywords: { $regex: '.*' + keyword + '.*' } });
+    const articles = await Article.find({
+      keywords: { $regex: ".*" + keyword + ".*" },
+    });
 
     if (!articles) {
       res.status(422).json({
@@ -284,15 +300,14 @@ module.exports = class ArticleController {
       return;
     }
 
-    try{
-      //returns article update data
+    try {
       res.status(200).json({
-        article
-      })
-    } catch (err){
-      console.error(err.message)
-      res.status(500).json ({message: err})
-      return
+        article,
+      });
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).json({ message: err });
+      return;
     }
   }
 };
